@@ -1,0 +1,60 @@
+@startuml data-flow
+!theme plain
+skinparam responseMessageBelowArrow true
+
+actor "用户" as User
+participant "用户 API 服务" as API
+participant "Kubernetes API" as K8sAPI
+participant "准入控制器" as AC
+participant "数据采集器" as DC
+participant "数据收集器" as DP
+participant "时序数据库\n(InfluxDB/TimescaleDB)" as UBS
+participant Kafka as KK
+participant PostgreSQL as PG
+participant "定时任务调度器" as SCH
+participant "计费计算模块" as BC
+participant "Redis 缓存" as RC
+
+== Pod 创建流程 ==
+User -> API: 发送创建 Pod 请求
+API -> K8sAPI: 转发 Pod 创建请求
+K8sAPI -> AC: 触发准入控制
+AC -> AC: 验证请求并添加必要标签
+AC --> K8sAPI: 返回修改后的 Pod 配置
+K8sAPI --> API: Pod 创建成功
+API --> User: 返回创建结果
+API -> PG: 更新用户资源记录
+
+== 数据采集流程 ==
+loop 持续进行
+    DC -> K8sAPI: 多线程采集所有 Pod 元数据,资源使用数据等
+    K8sAPI --> DC: 返回实时数据
+    DC -> KK: 写入采集数据到 Kafka
+    DP -> KK: 消费采集的数据
+    kk --> DP: 返回采集数据
+    DP -> UBS: 存储采集的数据
+end
+
+
+== 计费计算流程 ==
+loop N 分钟
+    SCH -> PG: 遍历用户信息
+    SCH -> PG: 获取计费规则
+    SCH -> BC: 触发计费计算任务
+    BC -> UBS: 查询详细使用数据
+    BC -> BC: 根据规则计算费用
+    BC -> PG: 更新账单信息
+end
+
+== 用户查询账单 ==
+User -> API: 请求账单信息
+API -> RC: 检查缓存
+RC --> API: 返回缓存数据（如果存在）
+API -> PG: 查询账单数据（如果缓存未命中）
+PG --> API: 返回账单数据
+API -> UBS: 查询详细使用数据（如需要）
+UBS --> API: 返回使用数据
+API -> RC: 更新缓存
+API --> User: 返回账单和使用信息
+
+@enduml

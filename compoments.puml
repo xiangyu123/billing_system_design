@@ -1,0 +1,135 @@
+@startuml component_c4_2
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+' LAYOUT_AS_SKETCH()
+
+Person(user, "用户", "系统的最终用户")
+
+Container_Boundary(frontend, "前端") {
+    Component(web_app, "Web应用", "React/Vue", "用户界面")
+}
+
+Container_Boundary(api_layer, "API 层") {
+    Component(api_service, "用户API服务", "RESTful API", "提供数据查询接口")
+}
+
+Container_Boundary(kubernetes, "Kubernetes 集群") {
+    Component(pod, "Pod", "Kubernetes", "运行应用并使用资源")
+}
+
+Container_Boundary(data_collection, "数据收集和存储") {
+    Component(collector, "数据收集器", "Technology", "收集资源使用数据")
+    Component(raw_storage, "原始数据存储", "Database", "存储原始使用数据")
+}
+
+Container_Boundary(billing_system, "计费系统") {
+    Component(calculator, "计费计算模块", "Service", "计算资源使用费用")
+    Component(bill_storage, "计费数据存储", "Database", "存储计费数据")
+    Component(scheduler, "定期任务调度器", "Cron Job", "触发计费计算")
+}
+
+Container_Boundary(integration, "外部集成") {
+    Component(payment_system, "支付系统集成", "Service", "处理账单和支付")
+}
+
+Rel_D(user, web_app, "使用")
+Rel_R(user, payment_system, "进行支付")
+
+Rel_D(web_app, api_service, "发送API请求")
+
+Rel_D(pod, collector, "发送使用数据")
+Rel_R(collector, raw_storage, "存储原始数据")
+
+Rel_D(raw_storage, calculator, "提供使用数据")
+Rel_L(scheduler, calculator, "触发计算")
+Rel_R(calculator, bill_storage, "存储计费结果")
+
+Rel_U(api_service, raw_storage, "查询原始数据")
+Rel_U(api_service, bill_storage, "查询计费数据")
+
+Rel_L(payment_system, bill_storage, "更新账单状态")
+
+@enduml
+
+
+@startuml component_c4_2_1
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+' LAYOUT_WITH_LEGEND()
+
+Person(user, "用户", "系统的最终用户")
+
+Container_Boundary(kubernetes, "Kubernetes 集群") {
+    Component(pod, "Pod", "Kubernetes", "运行应用并使用资源")
+}
+
+Container_Boundary(data_collection, "数据收集和存储") {
+    Component(collector, "数据收集器", "Technology", "收集资源使用数据")
+    Component(raw_storage, "原始数据存储", "Database", "存储原始使用数据")
+}
+
+Container_Boundary(billing_system, "计费系统") {
+    Component(calculator, "计费计算模块", "Service", "计算资源使用费用")
+    Component(bill_storage, "计费数据存储", "Database", "存储计费数据")
+    Component(scheduler, "定期任务调度器", "Cron Job", "触发计费计算")
+}
+
+Container_Boundary(api_layer, "API 层") {
+    Component(api_service, "用户API服务", "RESTful API", "提供数据查询接口")
+}
+
+Container_Boundary(frontend, "前端") {
+    Component(web_app, "Web应用", "React/Vue", "用户界面")
+}
+
+Container_Boundary(integration, "外部集成") {
+    Component(payment_system, "支付系统集成", "Service", "处理账单和支付")
+}
+
+Rel(user, web_app, "使用")
+Rel(user, payment_system, "进行支付")
+Rel(pod, collector, "发送使用数据")
+Rel(collector, raw_storage, "存储原始数据")
+Rel(raw_storage, calculator, "提供使用数据")
+Rel(scheduler, calculator, "触发计算")
+Rel(calculator, bill_storage, "存储计费结果")
+Rel(api_service, raw_storage, "查询原始数据")
+Rel(api_service, bill_storage, "查询计费数据")
+Rel(web_app, api_service, "发送API请求")
+Rel(payment_system, bill_storage, "更新账单状态")
+
+@enduml
+
+
+@startuml c4_3
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+' 移除图例
+HIDE_STEREOTYPE()
+
+actor "用户" as user
+
+component "Pod" as pod
+component "数据收集器" as collector
+database "原始数据存储" as raw_storage
+component "计费计算模块" as calculator
+database "计费数据存储" as bill_storage
+component "定期任务调度器" as scheduler
+component "用户API服务" as api_service
+component "Web应用" as web_app
+component "支付系统集成" as payment_system
+
+user --> web_app : 使用
+user --> payment_system : 进行支付
+
+pod --> collector : 发送使用数据
+collector --> raw_storage : 存储原始数据
+raw_storage --> calculator : 提供使用数据
+scheduler --> calculator : 触发计算
+calculator --> bill_storage : 存储计费结果
+api_service --> raw_storage : 查询原始数据
+api_service --> bill_storage : 查询计费数据
+web_app --> api_service : 发送API请求
+payment_system --> bill_storage : 更新账单状态
+
+@enduml
